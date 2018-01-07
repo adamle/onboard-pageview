@@ -9,10 +9,8 @@
 import UIKit
 
 class OnboardPageVC: UIPageViewController {
-
-    private func newOnboardVC(page: String) -> UIViewController {
-        return UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "\(page)VC")
-    }
+    
+    private var pageControl = UIPageControl()
     
     private(set) lazy var onboardVCArray: [UIViewController] = {
         return [self.newOnboardVC(page: "PageOne"),
@@ -20,20 +18,44 @@ class OnboardPageVC: UIPageViewController {
                 self.newOnboardVC(page: "PageThree")]
     }()
 
+    private func newOnboardVC(page: String) -> UIViewController {
+        return UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "\(page)VC")
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        dataSource = self
+        self.dataSource = self
+        self.delegate = self
         
+        // Set the first onboard page
         if let firstPageVC = onboardVCArray.first {
             setViewControllers([firstPageVC],
                                direction: .forward,
                                animated: true,
                                completion: nil)
         }
+        
+        configurePageControl()
+    }
+    
+    func configurePageControl() {
+        pageControl = UIPageControl(frame: CGRect(x: 0, y: UIScreen.main.bounds.maxY - 50, width: UIScreen.main.bounds.width, height: 50))
+        pageControl.numberOfPages = onboardVCArray.count
+        
+        // The dot state will not change with current page index change
+        // See the delagate function for changing the dot state
+        pageControl.currentPage = 0
+        
+        // Scale up the size of the dots
+        pageControl.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
+        
+        pageControl.pageIndicatorTintColor = #colorLiteral(red: 0.9999960065, green: 1, blue: 1, alpha: 0.5)
+        pageControl.currentPageIndicatorTintColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        self.view.addSubview(pageControl)
     }
 }
 
-extension OnboardPageVC: UIPageViewControllerDataSource {
+extension OnboardPageVC: UIPageViewControllerDataSource, UIPageViewControllerDelegate {
     
     func pageViewController(_ pageViewController: UIPageViewController, viewControllerBefore viewController: UIViewController) -> UIViewController? {
         guard let viewControllerIndex = onboardVCArray.index(of: viewController) else {
@@ -81,19 +103,11 @@ extension OnboardPageVC: UIPageViewControllerDataSource {
     // To trash page curl and replace it with a horizontal scroll, go to Mainstoryboard
     // and to attributes inspector, change transition style to scroll
 
-    // Implement the pagination dots (page indicator) - default state
-    func presentationCount(for pageViewController: UIPageViewController) -> Int {
-        return onboardVCArray.count
+    // Delegate page indicator, current dot state now change with current page index
+    func pageViewController(_ pageViewController: UIPageViewController, didFinishAnimating finished: Bool, previousViewControllers: [UIViewController], transitionCompleted completed: Bool) {
+        let currentPageVC = pageViewController.viewControllers![0]
+        self.pageControl.currentPage = onboardVCArray.index(of: currentPageVC)!
     }
-    
-    func presentationIndex(for pageViewController: UIPageViewController) -> Int {
-        guard let firstViewController = viewControllers?.first,
-            let firstViewControllerIndex = onboardVCArray.index(of: firstViewController) else {
-                return 0
-        }
-        return firstViewControllerIndex
-    }
-    
 }
 
 
